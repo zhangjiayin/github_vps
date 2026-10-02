@@ -1,22 +1,45 @@
 services:
   windows:
-    image: dockurr/windows
+    image: dockurr/windows:6.05
     container_name: windows
+
+    # 关键：绕开 Compose 创建的 windows_default
+    # 直接使用 Docker 默认 docker0 bridge
+    network_mode: bridge
+
     environment:
       VERSION: "11"
       USERNAME: "MASTER"
       PASSWORD: "admin@123"
+
       RAM_SIZE: "4G"
       CPU_CORES: "4"
       DISK_SIZE: "64G"
       DISK2_SIZE: "10G"
-    devices:
-      - /dev/kvm
-      - /dev/net/tun
+
+      # Windows VM 内部继续使用 passt
+      NETWORK: "user"
+
+      # Codespaces 多层网络，保留较低 MTU
+      MTU: "1400"
+
+      PASST_DEBUG: "Y"
+      DNSMASQ_DEBUG: "Y"
+
     cap_add:
       - NET_ADMIN
+
+    devices:
+      - /dev/kvm
+
     ports:
       - "8006:8006"
       - "3389:3389/tcp"
       - "3389:3389/udp"
+
+    volumes:
+      - "/tmp/windows/docker-windows-storage:/storage"
+      - "/workspaces/github_vps/windows/windows11.iso:/custom.iso:ro"
+
+    restart: unless-stopped
     stop_grace_period: 2m
